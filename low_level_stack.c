@@ -35,18 +35,55 @@ void stack_push(stack_t *stack, void *obj) {
   stack->data[stack->count++] = obj;
 }
 
+void *stack_pop(stack_t *stack) {
+  if (!stack->count) return NULL;
+  --stack->count;
+  return stack->data[stack->count];
+}
+
+void stack_free(stack_t *stack) {
+  if (stack == NULL || stack->data == NULL) return;
+  free(stack->data);
+  free(stack);
+}
+
+void scary_double_push(stack_t *s) {
+  stack_push(s, (void*)1337);
+  int *ptr = malloc(sizeof(int));
+  *ptr = 1024;
+  stack_push(s, ptr);
+}
 
 int main() {
   stack_t *s = stack_new(1);
   if (s->capacity == 1) puts("Sets capacity to 1");
+  else puts("Something wrong");
   if (s->count == 0) puts("No elements in the stack yet");
+  else puts("Something wrong");
   if (s->data) puts( "Allocates the stack data");
+  else puts("Something wrong");
   
   int a = 1;
   stack_push(s, &a);
   stack_push(s, &a);
   if (s->capacity == 2) puts("Sets capacity to 2");
+  else puts("Something wrong");
   if (s->count == 2) puts("2 elements in the stack");
+  else puts("Something wrong");
   
+  stack_pop(s);
+  printf("After pop size of stack is %lu\n", s->count);
+  stack_pop(s);
+  printf("After pop size of stack is %lu\n", s->count);
+  
+  stack_push(s, &a);
+  stack_push(s, &a);
+  printf("After push size of stack is %lu\n", s->count);
+  stack_free(s);
+  
+  s = stack_new(1);
+  scary_double_push(s);
+  printf("After scary push size of stack is %lu\n", s->count);
+  printf("%d %d\n", (int*)s->data[0] == (int*)1337, *(int*)s->data[1] == 1024);
   return 0;
 }
