@@ -54,6 +54,15 @@ void scary_double_push(stack_t *s) {
   stack_push(s, ptr);
 }
 
+void stack_push_multiple_types(stack_t *s) {
+  float* float_ptr = malloc(sizeof(float));
+  *float_ptr = 3.14;
+  stack_push(s, float_ptr);
+  char* string = malloc(sizeof("Sneklang is blazingly slow!"));
+  string = "Sneklang is blazingly slow!";
+  stack_push(s, string);
+}
+
 int main() {
   stack_t *s = stack_new(1);
   if (s->capacity == 1) puts("Sets capacity to 1");
@@ -85,5 +94,8 @@ int main() {
   scary_double_push(s);
   printf("After scary push size of stack is %lu\n", s->count);
   printf("%d %d\n", (int*)s->data[0] == (int*)1337, *(int*)s->data[1] == 1024);
+  stack_push_multiple_types(s);
+  printf("After multiple push size of stack is %lu\n", s->count);
+  printf("%f %s\n", *(float*)s->data[2], (char*)s->data[3]);
   return 0;
 }
