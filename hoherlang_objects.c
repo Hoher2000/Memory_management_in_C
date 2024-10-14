@@ -3,8 +3,45 @@
 #include<string.h>
 #include"hoherlang_objects.h"
 
-snek_object_t *new_snek_integer(int value){
+snek_object_t *_new_snek_object() {
     snek_object_t *obj = malloc(sizeof(snek_object_t));
+    if (obj == NULL) return NULL;
+    obj->refcount = 1;
+    return obj;
+}
+
+void refcount_inc(snek_object_t *obj) {
+    if (obj == NULL) return;
+    ++obj->refcount;
+    return;
+}
+
+void refcount_free(snek_object_t *obj) {
+    if (obj->kind == STRING){
+        free(obj->data.v_string);
+    }
+    if (obj->kind == VECTOR3){
+        refcount_dec(obj->data.v_vector3.x); refcount_dec(obj->data.v_vector3.y); refcount_dec(obj->data.v_vector3.z);
+    }
+    if (obj->kind == ARRAY){
+        for (size_t i = 0; i < obj->data.v_array.size; ++i){
+            refcount_dec(obj->data.v_array.elements[i]);
+        }
+        free(obj->data.v_array.elements);
+    }
+    free(obj);
+    return;
+}
+
+void refcount_dec(snek_object_t *obj) {
+    if (obj == NULL) return;
+    --obj->refcount;
+    if (obj->refcount == 0) refcount_free(obj);
+    return;
+}
+
+snek_object_t *new_snek_integer(int value){
+    snek_object_t *obj = _new_snek_object();
     if (obj == NULL) return NULL;
     obj->data.v_int = value;
     obj->kind = INTEGER;
@@ -12,7 +49,7 @@ snek_object_t *new_snek_integer(int value){
 }
 
 snek_object_t *new_snek_float(float value){
-    snek_object_t *obj = malloc(sizeof(snek_object_t));
+    snek_object_t *obj = _new_snek_object();
     if (obj == NULL) return NULL;
     obj->data.v_float = value;
     obj->kind = FLOAT;
@@ -20,7 +57,7 @@ snek_object_t *new_snek_float(float value){
 }
 
 snek_object_t *new_snek_string(char *value) {
-    snek_object_t *obj = malloc(sizeof(snek_object_t));
+    snek_object_t *obj = _new_snek_object();
     if (obj == NULL) return NULL;
     char* str = malloc(sizeof(value) + 1);
     if (str == NULL){
@@ -37,15 +74,16 @@ snek_object_t *new_snek_vector3(
     snek_object_t *x, snek_object_t *y, snek_object_t *z
 ) {
     if (x == NULL || y == NULL || z == NULL) return NULL;
-    snek_object_t *obj = malloc(sizeof(snek_object_t));
+    snek_object_t *obj = _new_snek_object();
     if (obj == NULL) return NULL;
     obj->data.v_vector3 = (snek_vector_t){x,y,z};
+    refcount_inc(x); refcount_inc(y); refcount_inc(z);
     obj->kind = VECTOR3;
     return obj;
 }
 
 snek_object_t *new_snek_array(size_t size) {
-    snek_object_t *obj = malloc(sizeof(snek_object_t));
+    snek_object_t *obj = _new_snek_object();
     if (obj == NULL) return NULL;
     snek_object_t **array = calloc(size, sizeof(snek_object_t*));
      if (array == NULL){
@@ -62,7 +100,9 @@ bool snek_array_set(snek_object_t *snek_obj, size_t index, snek_object_t *value)
       value == NULL ||
       snek_obj->kind != ARRAY ||
       index >= snek_obj->data.v_array.size) return false;
+  if (snek_array_get(snek_obj, index) != NULL) refcount_dec(snek_array_get(snek_obj, index));
   snek_obj->data.v_array.elements[index]=value;
+  refcount_inc(value);
   return true;
 }
 
@@ -161,5 +201,7 @@ int main()
     printf("(42, 3.1415, \"Hoher\") + (42, 3.1415, \"Hoher\") = \"%s\"\n", snek_add(vector3_object, vector3_object)->data.v_vector3.z->data.v_string);
     printf("%lu\n", snek_add(array_obj, array_obj)->data.v_array.size);
     printf("%s\n", snek_add(array_obj, array_obj)->data.v_array.elements[3]->data.v_string);
+    
+    printf("%d", int_object->refcount);
     return 0;
 }
