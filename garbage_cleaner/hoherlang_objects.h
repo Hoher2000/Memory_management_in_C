@@ -1,7 +1,6 @@
+#pragma once
 #include <stdbool.h>
 #include <stddef.h>
-
-#include "low_level_stack.h"
 
 typedef struct SnekObject snek_object_t;
 
